@@ -3,15 +3,8 @@ from scipy.optimize import linear_sum_assignment
 from scipy.optimize import minimize_scalar
 from sinkhorn_knopp import sinkhorn_knopp as skp
 
-def mfaq(
-    graph1,
-    graph2,
-    p_init = 'random',
-    weights = 1,
-    scheme = 'naive',
-    tolerance = 1
-    ):
-
+def mfaq(graph1, graph2, p_init = 'random', weights = 1,
+         scheme = 'naive', tolerance = 1.0):
 
     """
     A function for returning the permutation matrix P associated with the
@@ -30,12 +23,12 @@ def mfaq(
 
     p_init: array-like, optional (default = 'random')
         Shape (n_vertices, n_vertices) numpy array. Initialization for the
-        permutation matrix P. 
+        permutation matrix P.
         If unspecified, will call on random_DSM to initialize as a random
         permutation matrix
 
     weights: array-like, optional (default = 1)
-        A vector of length (c_layers), where the ith entry corresponds to the 
+        A vector of length (c_layers), where the ith entry corresponds to the
         weight given to the ith layer.
         If unspecified, each layer will be given equal weight.
 
@@ -43,28 +36,41 @@ def mfaq(
         Padding scheme for the template multiplex network.
 
         'naive' (default)
+            Pads the template network with 0 to match the size of the background
+            network
+
+        'centered'
+            Modifies the template network according to the centered padding scheme
+            of graph_pad, then pads with 0 to match the size of the background
+            network.
+
+    tolerance: float, optional (default = 1.0)
+        The value of the Frobenius norm between each iteration of P that MFAQ will
+        converge to before terminating.
 
     Returns
     -------
-    out: array-like, shape (n_vertices, n_vertices)
-        A graph.
+    pfinal: array-like, shape (n_vertices, n_vertices)
+        A permutation matrix
 
     See Also
     --------
-    networkx.Graph, numpy.array
+    numpy.array, sinkhorn_knopp.SinkhornKnopp
     """
 
+    graph1 = import_graph(graph1)
+    graph2 = import_graph(graph2)
     shape1 = graph1.shape
     shape2 = graph2.shape
 
     if (len(shape1) != 3) or (len(shape2) != 3):
-        msg = "Both input tensors must have 3 dimensions."
+        msg = "Both input networks must have 3 dimensions."
         raise ValueError(msg)
     if shape1[0] != shape2[0]:
-        msg = "Input tensors must have matching numbers of layers"
+        msg = "Input networks must have matching numbers of layers"
         raise ValueError(msg)
     if shape1[1] > shape2[1]:
-        msg: "Template tensor must have fewer vertices than background tensor"
+        msg: "Template network must have fewer vertices than background tensor"
         raise ValueError(msg)
 
     nlayers = shape1[0]
